@@ -1,0 +1,10 @@
+# Generated audio files
+*.wav
+*.mp3
+*.flac
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
