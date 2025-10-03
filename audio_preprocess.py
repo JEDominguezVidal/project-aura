@@ -45,6 +45,9 @@ def ensure_wav_for_whisper(input_path: Path, output_path: Path) -> None:
     if not input_path.exists():
         raise FileNotFoundError(f"Input audio file not found: {input_path}")
 
+    # Ensure parent directory for output file exists
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
     # Construct ffmpeg command for Whisper-compatible conversion
     # -y: Overwrite output file if it exists
     # -i: Input file path
