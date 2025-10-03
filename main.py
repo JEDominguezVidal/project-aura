@@ -39,7 +39,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input", required=True, help="Path to input WAV file")
     parser.add_argument("--outdir", default="./output", help="Output directory")
     parser.add_argument("--lang", default="es", help="Language code (e.g. es, en)")
-    parser.add_argument("--whisper_model", default="large-v3", help="Whisper model to use")
+    parser.add_argument("--whisper_model", default="medium", help="Whisper model to use")
     parser.add_argument("--mfa_lang", default="spanish", help="Language model name for MFA")
     return parser.parse_args()
 
@@ -73,6 +73,9 @@ def main() -> None:
     ensure_wav_for_whisper(Path(args.input), preproc_wav)
 
     # Step 2: Perform ASR with Whisper
+    logger.info("Transcribing with Whisper (%s)...", args.whisper_model)
+    transcript_txt = outdir / "transcript.txt"
+    transcribe_whisper(str(preproc_wav), str(transcript_txt), model_name=args.whisper_model, language=args.lang)
 
     # Step 3: Run MFA alignment
 
