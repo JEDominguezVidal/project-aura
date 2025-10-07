@@ -40,7 +40,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--outdir", default="./output", help="Output directory")
     parser.add_argument("--lang", default="es", help="Language code (e.g. es, en)")
     parser.add_argument("--whisper_model", default="medium", help="Whisper model to use")
-    parser.add_argument("--mfa_lang", default="spanish", help="Language model name for MFA")
+    parser.add_argument("--mfa_lang", default="spanish_mfa", help="Language model name for MFA")
     return parser.parse_args()
 
 
@@ -78,6 +78,10 @@ def main() -> None:
     transcribe_whisper(str(preproc_wav), str(transcript_txt), model_name=args.whisper_model, language=args.lang)
 
     # Step 3: Run MFA alignment
+    logger.info("Running MFA for alignment...")
+    mfa_output_dir = outdir / "mfa_output"
+    mfa_output_dir.mkdir(exist_ok=True)
+    textgrid_path = run_mfa_alignment(logger=logger, wav_path=preproc_wav, transcript_path=transcript_txt, out_dir=mfa_output_dir, mfa_lang=args.mfa_lang)
 
     # Step 4: Parse TextGrid and generate sentence timestamps
 
