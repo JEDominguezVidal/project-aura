@@ -19,13 +19,14 @@ Notes:
 from pathlib import Path
 import subprocess
 import shutil
+import logging
 from textgrid import TextGrid
 import re
 from typing import List, Dict, Any
 from utils import setup_logger
 
 
-def run_mfa_alignment(wav_path: Path, transcript_path: Path, out_dir: Path, mfa_lang: str = "spanish") -> Path:
+def run_mfa_alignment(logger: logging.Logger, wav_path: Path, transcript_path: Path, out_dir: Path, mfa_lang: str = "spanish_mfa") -> Path:
     """
     Prepare a small corpus for MFA, copy WAV and transcript to matching basename, and execute MFA alignment.
 
@@ -39,6 +40,7 @@ def run_mfa_alignment(wav_path: Path, transcript_path: Path, out_dir: Path, mfa_
     - Acoustic model and pronunciation dictionary for the target language
 
     Args:
+        logger: Logger instance for logging messages
         wav_path: Path to preprocessed WAV file (16kHz, mono, 16-bit PCM)
         transcript_path: Path to text file containing orthographic transcription
         out_dir: Directory where MFA will deposit results
@@ -53,24 +55,23 @@ def run_mfa_alignment(wav_path: Path, transcript_path: Path, out_dir: Path, mfa_
 
     Example:
         >>> textgrid_path = run_mfa_alignment(
+        ...     logger,
         ...     Path('audio.wav'),
         ...     Path('transcript.txt'),
         ...     Path('output'),
-        ...     'spanish'
+        ...     'spanish_mfa'
         ... )
     """
-    logger = setup_logger()
+    logger = logger
     wav_path = Path(wav_path)
     transcript_path = Path(transcript_path)
     out_dir = Path(out_dir)
-
 
     # Prepare corpus dir
     corpus_dir = out_dir / "corpus"
     if corpus_dir.exists():
         shutil.rmtree(corpus_dir)
     corpus_dir.mkdir(parents=True)
-
 
     # MFA expects: wav file(s) + matching .lab/.txt transcripts with same basename
     basename = wav_path.stem
@@ -79,7 +80,6 @@ def run_mfa_alignment(wav_path: Path, transcript_path: Path, out_dir: Path, mfa_
     shutil.copy(wav_path, wav_dst)
     shutil.copy(transcript_path, txt_dst)
 
-
     # Run MFA align
     mfa_out_dir = out_dir / "mfa_aligned"
     if mfa_out_dir.exists():
@@ -87,14 +87,19 @@ def run_mfa_alignment(wav_path: Path, transcript_path: Path, out_dir: Path, mfa_
     mfa_out_dir.mkdir(parents=True)
 
     # Command example:
-    # mfa align <corpus_dir> <dictionary_or_lang> <output_dir> --clean
+    # mfa align <corpus_dir> <dictionary_or_lang> <acoustic_model> <output_dir> --clean
     # We assume the user has installed an acoustic/lexicon model named mfa_lang
+    # and a dictionary with the same name.
+    # Adding more permissive beam parameters to handle difficult alignments
     cmd = [
         "mfa", "align",
         str(corpus_dir),
         mfa_lang,
+        mfa_lang,
         str(mfa_out_dir),
-        "--clean"
+        "--clean",
+        "--beam", "100",        # Increased from default 10
+        "--retry_beam", "400"   # Increased from default 40
     ]
     logger.debug("Running MFA: %s", " ".join(cmd))
 
@@ -104,16 +109,25 @@ def run_mfa_alignment(wav_path: Path, transcript_path: Path, out_dir: Path, mfa_
         logger.error("MFA failed with return code %s. Please ensure MFA is installed and models are available.", e.returncode)
         raise
 
-    # Search for TextGrid in output (MFA writes TextGrid files within the output directory)
+    # Search for TextGrid in output (MFA writes TextGrid files within the mfa_aligned subdirectory)
     tg = None
+
+    # First, try to find TextGrid directly in the mfa_aligned directory
     for p in mfa_out_dir.glob("*.TextGrid"):
         tg = p
         break
+
+    # If not found, MFA creates a subdirectory with the basename inside mfa_aligned
     if tg is None:
-        # Sometimes MFA creates a subdirectory with the basename
         nested = mfa_out_dir / basename
         if nested.exists():
             tg = next(nested.glob("*.TextGrid"), None)
+
+    # If still not found, search recursively in all subdirectories of mfa_aligned
+    if tg is None:
+        for p in mfa_out_dir.rglob("*.TextGrid"):
+            tg = p
+            break
 
     if tg is None:
         logger.error("No TextGrid found after running MFA. Please check MFA logs in stdout/stderr.")
