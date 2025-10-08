@@ -90,7 +90,7 @@ def run_mfa_alignment(logger: logging.Logger, wav_path: Path, transcript_path: P
     # mfa align <corpus_dir> <dictionary_or_lang> <acoustic_model> <output_dir> --clean
     # We assume the user has installed an acoustic/lexicon model named mfa_lang
     # and a dictionary with the same name.
-    # Adding more permissive beam parameters to handle difficult alignments
+    # Using higher beam parameters for difficult alignments
     cmd = [
         "mfa", "align",
         str(corpus_dir),
@@ -98,8 +98,8 @@ def run_mfa_alignment(logger: logging.Logger, wav_path: Path, transcript_path: P
         mfa_lang,
         str(mfa_out_dir),
         "--clean",
-        "--beam", "100",        # Increased from default 10
-        "--retry_beam", "400"   # Increased from default 40
+        "--beam", "100",        # Higher beam width for difficult alignments
+        "--retry_beam", "400"   # Higher retry beam
     ]
     logger.debug("Running MFA: %s", " ".join(cmd))
 
@@ -266,8 +266,8 @@ def parse_textgrid_for_sentences(logger: logging.Logger, textgrid_path: Path, tr
                 logger.warning("Could not align word '%s' in sentence: %s", sentence_word, sentence)
                 break
 
-        # If majority of words aligned (>50%), consider valid
-        if matched_words >= len(sentence_word_list) * 0.5 and sentence_words:
+        # If sufficient words aligned (>20%), consider valid
+        if matched_words >= len(sentence_word_list) * 0.2 and sentence_words:
             sentence_data.append({
                 'sentence': sentence,
                 'start': start_time,
