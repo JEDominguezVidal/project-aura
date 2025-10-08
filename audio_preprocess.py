@@ -13,10 +13,11 @@ Whisper requires:
 """
 import subprocess
 from pathlib import Path
+import logging
 from utils import setup_logger
 
 
-def ensure_wav_for_whisper(input_path: Path, output_path: Path) -> None:
+def ensure_wav_for_whisper(logger: logging.Logger, input_path: Path, output_path: Path) -> None:
     """
     Convert audio to WAV mono 16kHz 16-bit PCM format using ffmpeg.
 
@@ -25,6 +26,7 @@ def ensure_wav_for_whisper(input_path: Path, output_path: Path) -> None:
     and encoding to match Whisper's expectations.
 
     Args:
+        logger: Logger instance for logging messages
         input_path: Path to input audio file (any format supported by ffmpeg)
         output_path: Path where the converted WAV file will be saved
 
@@ -35,7 +37,7 @@ def ensure_wav_for_whisper(input_path: Path, output_path: Path) -> None:
     Example:
         >>> ensure_wav_for_whisper(Path('input.mp3'), Path('output.wav'))
     """
-    logger = setup_logger()
+    logger = logger
 
     # Ensure input and output are Path objects for consistent handling
     input_path = Path(input_path)
