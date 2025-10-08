@@ -70,12 +70,12 @@ def main() -> None:
     # Step 1: Preprocess audio for Whisper compatibility
     logger.info("Preprocessing audio for Whisper...")
     preproc_wav = outdir / "input_16k_mono.wav"
-    ensure_wav_for_whisper(Path(args.input), preproc_wav)
+    ensure_wav_for_whisper(logger, Path(args.input), preproc_wav)
 
     # Step 2: Perform ASR with Whisper
     logger.info("Transcribing with Whisper (%s)...", args.whisper_model)
     transcript_txt = outdir / "transcript.txt"
-    transcribe_whisper(str(preproc_wav), str(transcript_txt), model_name=args.whisper_model, language=args.lang)
+    transcribe_whisper(logger, str(preproc_wav), str(transcript_txt), model_name=args.whisper_model, language=args.lang)
 
     # Step 3: Run MFA alignment
     logger.info("Running MFA for alignment...")
@@ -84,6 +84,12 @@ def main() -> None:
     textgrid_path = run_mfa_alignment(logger=logger, wav_path=preproc_wav, transcript_path=transcript_txt, out_dir=mfa_output_dir, mfa_lang=args.mfa_lang)
 
     # Step 4: Parse TextGrid and generate sentence timestamps
+    logger.info("Parsing TextGrid to extract sentences with timestamps...")
+    if textgrid_path is None:
+        logger.error("No TextGrid found in %s", mfa_output_dir)
+        raise SystemExit(1)
+
+    sentences = parse_textgrid_for_sentences(logger, textgrid_path, transcript_txt)
 
     # Step 5: Export clips per sentence
 
