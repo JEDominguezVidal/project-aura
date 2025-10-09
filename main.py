@@ -92,6 +92,11 @@ def main() -> None:
     sentences = parse_textgrid_for_sentences(logger, textgrid_path, transcript_txt)
 
     # Step 5: Export clips per sentence
+    clips_dir = outdir / "clips"
+    clips_dir.mkdir(exist_ok=True)
+    generated_clips = export_sentence_clips(logger, preproc_wav, sentences, clips_dir)
+
+    logger.info("Process completed. Clips generated in: %s", clips_dir)
 
 
 if __name__ == "__main__":
