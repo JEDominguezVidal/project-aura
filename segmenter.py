@@ -1,5 +1,21 @@
 """
-Generate WAV clips per sentence using ffmpeg and save transcriptions to text files.
+Audio segmentation functions for creating training clips.
+
+This module handles the final step of the audio processing pipeline: segmenting
+long-form audio into sentence-level clips based on precise timestamps from
+forced alignment. It uses ffmpeg to extract audio segments and saves corresponding
+transcriptions to text files for training datasets.
+
+The module assumes that ffmpeg is installed and available in the system PATH.
+
+Main functions:
+- export_sentence_clips: Extract audio clips per sentence with transcriptions
+
+Notes:
+- Requires ffmpeg for audio cutting operations
+- Clips include configurable pre/post roll padding to avoid cutting words
+- Only sentences above minimum duration threshold are exported
+- Output format: 01.wav/01.txt, 02.wav/02.txt, etc.
 """
 from pathlib import Path
 import subprocess
