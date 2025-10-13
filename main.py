@@ -21,6 +21,13 @@ from audio_preprocess import ensure_wav_for_whisper
 from asr_whisper import transcribe_whisper
 from align_mfa import run_mfa_alignment, parse_textgrid_for_sentences
 from segmenter import export_sentence_clips
+from config import (
+    DEFAULT_LANGUAGE,
+    DEFAULT_WHISPER_MODEL,
+    DEFAULT_MFA_LANG,
+    DEFAULT_OUTPUT_FREQ,
+    DEFAULT_OUTPUT_DIR
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -38,11 +45,11 @@ def parse_args() -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser(description="Whisper+MFA dataset builder")
     parser.add_argument("--input", required=True, help="Path to input WAV file")
-    parser.add_argument("--outdir", default="./output", help="Output directory")
-    parser.add_argument("--lang", default="es", help="Language code (e.g. es, en)")
-    parser.add_argument("--whisper_model", default="medium", help="Whisper model to use")
-    parser.add_argument("--mfa_lang", default="spanish_mfa", help="Language model name for MFA")
-    parser.add_argument("--outfreq", type=int, default=16000, help="Output sample rate in Hz for clips (default: 16000)")
+    parser.add_argument("--outdir", default=DEFAULT_OUTPUT_DIR, help=f"Output directory (default: {DEFAULT_OUTPUT_DIR})")
+    parser.add_argument("--lang", default=DEFAULT_LANGUAGE, help=f"Language code (default: {DEFAULT_LANGUAGE})")
+    parser.add_argument("--whisper_model", default=DEFAULT_WHISPER_MODEL, help=f"Whisper model (default: {DEFAULT_WHISPER_MODEL})")
+    parser.add_argument("--mfa_lang", default=DEFAULT_MFA_LANG, help=f"MFA language model (default: {DEFAULT_MFA_LANG})")
+    parser.add_argument("--outfreq", type=int, default=DEFAULT_OUTPUT_FREQ, help=f"Output sample rate in Hz (default: {DEFAULT_OUTPUT_FREQ})")
     return parser.parse_args()
 
 

@@ -24,6 +24,7 @@ from textgrid import TextGrid
 import re
 from typing import List, Dict, Any
 from utils import setup_logger
+from config import MFA_BEAM, MFA_RETRY_BEAM, MIN_WORD_ALIGNMENT_RATIO
 
 
 def run_mfa_alignment(logger: logging.Logger, wav_path: Path, transcript_path: Path, out_dir: Path, mfa_lang: str = "spanish_mfa") -> Path:
@@ -98,8 +99,8 @@ def run_mfa_alignment(logger: logging.Logger, wav_path: Path, transcript_path: P
         mfa_lang,
         str(mfa_out_dir),
         "--clean",
-        "--beam", "100",        # Higher beam width for difficult alignments
-        "--retry_beam", "400"   # Higher retry beam
+        "--beam", str(MFA_BEAM),        # Higher beam width for difficult alignments
+        "--retry_beam", str(MFA_RETRY_BEAM)   # Higher retry beam
     ]
     logger.debug("Running MFA: %s", " ".join(cmd))
 
@@ -266,8 +267,8 @@ def parse_textgrid_for_sentences(logger: logging.Logger, textgrid_path: Path, tr
                 logger.warning("Could not align word '%s' in sentence: %s", sentence_word, sentence)
                 break
 
-        # If sufficient words aligned (>20%), consider valid
-        if matched_words >= len(sentence_word_list) * 0.2 and sentence_words:
+        # If sufficient words aligned, consider valid
+        if matched_words >= len(sentence_word_list) * MIN_WORD_ALIGNMENT_RATIO and sentence_words:
             sentence_data.append({
                 'sentence': sentence,
                 'start': start_time,
