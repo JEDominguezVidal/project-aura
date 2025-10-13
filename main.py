@@ -34,6 +34,7 @@ def parse_args() -> argparse.Namespace:
             - lang: Language code for transcription
             - whisper_model: Whisper model to use for ASR
             - mfa_lang: Language model for MFA alignment
+            - outfreq: Output sample rate in Hz for clips
     """
     parser = argparse.ArgumentParser(description="Whisper+MFA dataset builder")
     parser.add_argument("--input", required=True, help="Path to input WAV file")
@@ -41,6 +42,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lang", default="es", help="Language code (e.g. es, en)")
     parser.add_argument("--whisper_model", default="medium", help="Whisper model to use")
     parser.add_argument("--mfa_lang", default="spanish_mfa", help="Language model name for MFA")
+    parser.add_argument("--outfreq", type=int, default=16000, help="Output sample rate in Hz for clips (default: 16000)")
     return parser.parse_args()
 
 
@@ -94,7 +96,7 @@ def main() -> None:
     # Step 5: Export clips per sentence
     clips_dir = outdir / "clips"
     clips_dir.mkdir(exist_ok=True)
-    generated_clips = export_sentence_clips(logger, preproc_wav, sentences, clips_dir)
+    generated_clips = export_sentence_clips(logger, preproc_wav, sentences, clips_dir, outfreq=args.outfreq)
 
     logger.info("Process completed. Clips generated in: %s", clips_dir)
 

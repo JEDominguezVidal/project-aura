@@ -22,12 +22,13 @@ import subprocess
 import logging
 
 
-def export_sentence_clips(logger: logging.Logger, source_wav: Path, sentences: list, out_dir: Path, min_dur: float = 0.8, pre_roll: float = 0.2, post_roll: float = 0.2) -> list:
+def export_sentence_clips(logger: logging.Logger, source_wav: Path, sentences: list, out_dir: Path, min_dur: float = 0.8, pre_roll: float = 0.2, post_roll: float = 0.2, outfreq: int = 16000) -> list:
     """
     Export audio clips for each sentence using ffmpeg.
 
     For each sentence with sufficient duration, extracts a clip from the source audio
     with optional pre/post roll padding, and saves both the audio clip and transcription.
+    Audio is resampled to the specified output frequency if different from input.
 
     Args:
         logger: Logger instance for logging messages
@@ -37,6 +38,7 @@ def export_sentence_clips(logger: logging.Logger, source_wav: Path, sentences: l
         min_dur: Minimum sentence duration in seconds to export
         pre_roll: Seconds to include before sentence start
         post_roll: Seconds to include after sentence end
+        outfreq: Output sample rate in Hz for clips
 
     Returns:
         List of paths to generated clip files
@@ -65,14 +67,28 @@ def export_sentence_clips(logger: logging.Logger, source_wav: Path, sentences: l
         txt_path = out_dir / f"{clip_name}.txt"
 
         # ffmpeg command to extract clip
-        cmd = [
-            "ffmpeg", "-y",
-            "-i", str(source_wav),
-            "-ss", f"{start_cut:.3f}",
-            "-t", f"{duration:.3f}",
-            "-c", "copy",  # Copy without re-encoding for speed
-            str(wav_path)
-        ]
+        if outfreq == 16000:
+            # Use copy codec for speed when no resampling needed
+            cmd = [
+                "ffmpeg", "-y",
+                "-i", str(source_wav),
+                "-ss", f"{start_cut:.3f}",
+                "-t", f"{duration:.3f}",
+                "-c", "copy",  # Copy without re-encoding for speed
+                str(wav_path)
+            ]
+        else:
+            # Resample to specified frequency
+            cmd = [
+                "ffmpeg", "-y",
+                "-i", str(source_wav),
+                "-ss", f"{start_cut:.3f}",
+                "-t", f"{duration:.3f}",
+                "-ar", str(outfreq),  # Set output sample rate
+                "-ac", "1",  # Ensure mono output
+                "-c:a", "pcm_s16le",  # Use PCM 16-bit encoding
+                str(wav_path)
+            ]
 
         try:
             subprocess.run(cmd, check=True, capture_output=True)
