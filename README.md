@@ -119,8 +119,18 @@ python -c "import torch; print('torch', torch.__version__, 'cuda', torch.cuda.is
 ### Usage Examples:
 Run the pipeline with the main script:
 ```bash
-python main.py --input /path/to/input.wav --outdir ./dataset_out --lang es --whisper_model large-v3 --mfa_lang spanish_mfa
+python main.py --input /path/to/input.wav --outdir ./dataset_out --lang es --whisper_model large-v3 --mfa_lang spanish_mfa --outfreq 24000
 ```
+
+### CLI Arguments:
+| Argument | Description | Example |
+|----------|-------------|---------|
+| `--input` | Path to input audio file (WAV/MP3) | `--input /path/to/audio.wav` |
+| `--outdir` | Output directory for processed files | `--outdir ./my_dataset` |
+| `--lang` | Language code for transcription | `--lang es` |
+| `--whisper_model` | Whisper model to use (tiny/base/small/medium/large-v3) | `--whisper_model medium` |
+| `--mfa_lang` | Language model name for MFA alignment | `--mfa_lang spanish_mfa` |
+| `--outfreq` | Output sample rate in Hz for clips | `--outfreq 24000` |
 
 #### Notes and recommendations:
 - Transcription accuracy matters for alignment. If the Whisper transcript contains many errors, forced alignment will struggle. Inspect transcript.txt and manually correct obvious errors if you require perfect segmentation.
