@@ -12,9 +12,9 @@ from pathlib import Path
 # Add project root to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from audio_preprocess import ensure_wav_for_whisper
-from asr_whisper import transcribe_whisper
-from utils import setup_logger
+from core.audio_preprocess import ensure_wav_for_whisper
+from core.asr_whisper import transcribe_whisper
+from core.utils import setup_logger
 
 
 def test_asr():

@@ -20,7 +20,7 @@ Notes:
 from pathlib import Path
 import subprocess
 import logging
-from config import MIN_SENTENCE_DURATION, PRE_ROLL_SECONDS, POST_ROLL_SECONDS
+from core.config import MIN_SENTENCE_DURATION, PRE_ROLL_SECONDS, POST_ROLL_SECONDS
 
 
 def export_sentence_clips(logger: logging.Logger, source_wav: Path, sentences: list, out_dir: Path, min_dur: float = MIN_SENTENCE_DURATION, pre_roll: float = PRE_ROLL_SECONDS, post_roll: float = POST_ROLL_SECONDS, outfreq: int = 16000) -> list:

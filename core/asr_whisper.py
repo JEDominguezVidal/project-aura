@@ -10,7 +10,6 @@ from pathlib import Path
 import whisper
 import logging
 from typing import Dict, Any
-from utils import setup_logger
 
 
 def transcribe_whisper(logger: logging.Logger, wav_path: str, out_txt: str, model_name: str = "medium", language: str = "es") -> Dict[str, Any]:

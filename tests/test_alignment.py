@@ -12,10 +12,10 @@ from pathlib import Path
 # Add project root to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from audio_preprocess import ensure_wav_for_whisper
-from asr_whisper import transcribe_whisper
-from align_mfa import run_mfa_alignment
-from utils import setup_logger
+from core.audio_preprocess import ensure_wav_for_whisper
+from core.asr_whisper import transcribe_whisper
+from core.align_mfa import run_mfa_alignment
+from core.utils import setup_logger
 
 
 def test_alignment():

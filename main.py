@@ -16,12 +16,12 @@ import argparse
 import logging
 from pathlib import Path
 
-from utils import setup_logger
-from audio_preprocess import ensure_wav_for_whisper
-from asr_whisper import transcribe_whisper
-from align_mfa import run_mfa_alignment, parse_textgrid_for_sentences
-from segmenter import export_sentence_clips
-from config import (
+from core.utils import setup_logger
+from core.audio_preprocess import ensure_wav_for_whisper
+from core.asr_whisper import transcribe_whisper
+from core.align_mfa import run_mfa_alignment, parse_textgrid_for_sentences
+from core.segmenter import export_sentence_clips
+from core.config import (
     DEFAULT_LANGUAGE,
     DEFAULT_WHISPER_MODEL,
     DEFAULT_MFA_LANG,

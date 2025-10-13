@@ -23,8 +23,7 @@ import logging
 from textgrid import TextGrid
 import re
 from typing import List, Dict, Any
-from utils import setup_logger
-from config import MFA_BEAM, MFA_RETRY_BEAM, MIN_WORD_ALIGNMENT_RATIO
+from core.config import MFA_BEAM, MFA_RETRY_BEAM, MIN_WORD_ALIGNMENT_RATIO
 
 
 def run_mfa_alignment(logger: logging.Logger, wav_path: Path, transcript_path: Path, out_dir: Path, mfa_lang: str = "spanish_mfa") -> Path:

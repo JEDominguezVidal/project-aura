@@ -18,16 +18,21 @@ This repository is intended for researchers and engineers familiar with command-
 ### File Structure:
 ```
 .
-├── README.md
-├── requirements.txt
-├── main.py                     # CLI entrypoint that orchestrates the pipeline
-├── audio_preprocess.py         # audio conversion/preprocessing (ffmpeg wrapper)
-├── asr_whisper.py              # Whisper (large-v3) wrapper for initial transcription
-├── align_mfa.py                # prepare corpus and run Montreal Forced Aligner (MFA); parse TextGrid
-├── segmenter.py                # cut audio into clips per sentence and write .txt files
-├── utils.py                    # small utilities (logging, path checks, time formatting)
-└── assets/			 # Project assets
-    └── sample.mp3              # Sample audio for testing
+├── core/                   # Core functionality package
+│   ├── __init__.py         # Package initialization
+│   ├── config.py           # Centralized configuration
+│   ├── utils.py            # Utility functions
+│   ├── audio_preprocess.py # audio conversion/preprocessing (ffmpeg wrapper)
+│   ├── asr_whisper.py      # Whisper (large-v3) wrapper for initial transcription
+│   ├── align_mfa.py        # prepare corpus and run Montreal Forced Aligner (MFA); parse TextGrid
+│   └── segmenter.py        # cut audio into clips per sentence and write .txt files
+├── assets/			          # Project assets
+│   └── sample.mp3          # Sample audio for testing
+├── tests/                  # Test suite
+├── output/                 # Generated outputs
+├── main.py                 # CLI entrypoint that orchestrates the pipeline
+├── requirements.txt        # Dependencies
+└── README.md               # Documentation
 ```
 
 ## Installation and Usage (CLI)

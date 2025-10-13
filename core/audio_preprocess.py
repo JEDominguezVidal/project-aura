@@ -14,7 +14,6 @@ Whisper requires:
 import subprocess
 from pathlib import Path
 import logging
-from utils import setup_logger
 
 
 def ensure_wav_for_whisper(logger: logging.Logger, input_path: Path, output_path: Path) -> None:
