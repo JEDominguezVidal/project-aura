@@ -8,6 +8,7 @@ This module serves as the primary interface for the audio processing pipeline th
 3. Runs forced alignment using Montreal Forced Aligner (MFA)
 4. Parses alignment results to extract sentence-level timestamps
 5. Generates segmented audio clips with corresponding transcriptions
+6. (Optional) Generates TTS training dataset CSV, when --generate-dataset is used
 
 The pipeline is designed to create training datasets from long-form audio recordings
 by breaking them into sentence-level segments with precise timing information.
@@ -21,6 +22,7 @@ from core.audio_preprocess import ensure_wav_for_whisper
 from core.asr_whisper import transcribe_whisper
 from core.align_mfa import run_mfa_alignment, parse_textgrid_for_sentences
 from core.segmenter import export_sentence_clips
+from core.generate_training_dataset import generate_tts_dataset
 from core.config import (
     DEFAULT_LANGUAGE,
     DEFAULT_WHISPER_MODEL,
@@ -50,6 +52,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--whisper_model", default=DEFAULT_WHISPER_MODEL, help=f"Whisper model (default: {DEFAULT_WHISPER_MODEL})")
     parser.add_argument("--mfa_lang", default=DEFAULT_MFA_LANG, help=f"MFA language model (default: {DEFAULT_MFA_LANG})")
     parser.add_argument("--outfreq", type=int, default=DEFAULT_OUTPUT_FREQ, help=f"Output sample rate in Hz (default: {DEFAULT_OUTPUT_FREQ})")
+    parser.add_argument("--generate-dataset", action="store_true", help="Generate TTS training dataset CSV from clips")
     return parser.parse_args()
 
 
@@ -63,6 +66,7 @@ def main() -> None:
     3. Performs forced alignment with MFA
     4. Extracts sentence-level timestamps
     5. Generates segmented audio clips
+    6. Generates TTS training dataset CSV (optional, when --generate-dataset is used)
 
     The function will exit with an error code if any step fails.
     """
@@ -104,6 +108,16 @@ def main() -> None:
     clips_dir = outdir / "clips"
     clips_dir.mkdir(exist_ok=True)
     generated_clips = export_sentence_clips(logger, preproc_wav, sentences, clips_dir, outfreq=args.outfreq)
+
+    # Step 6: Generate TTS training dataset CSV (optional)
+    if args.generate_dataset:
+        logger.info("Generating TTS training dataset CSV...")
+        dataset_csv = outdir / "dataset.csv"
+        success = generate_tts_dataset(logger, clips_dir, dataset_csv)
+        if success:
+            logger.info("TTS dataset CSV generated: %s", dataset_csv)
+        else:
+            logger.warning("Failed to generate TTS dataset CSV")
 
     logger.info("Process completed. Clips generated in: %s", clips_dir)
 
