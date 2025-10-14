@@ -18,21 +18,27 @@ This repository is intended for researchers and engineers familiar with command-
 ### File Structure:
 ```
 .
-├── core/                   # Core functionality package
-│   ├── __init__.py         # Package initialization
-│   ├── config.py           # Centralized configuration
-│   ├── utils.py            # Utility functions
-│   ├── audio_preprocess.py # audio conversion/preprocessing (ffmpeg wrapper)
-│   ├── asr_whisper.py      # Whisper (large-v3) wrapper for initial transcription
-│   ├── align_mfa.py        # prepare corpus and run Montreal Forced Aligner (MFA); parse TextGrid
-│   └── segmenter.py        # cut audio into clips per sentence and write .txt files
-├── assets/			          # Project assets
-│   └── sample.mp3          # Sample audio for testing
-├── tests/                  # Test suite
-├── output/                 # Generated outputs
-├── main.py                 # CLI entrypoint that orchestrates the pipeline
-├── requirements.txt        # Dependencies
-└── README.md               # Documentation
+├── core/                              # Core functionality package
+│   ├── __init__.py                    # Package initialization
+│   ├── config.py                      # Centralized configuration
+│   ├── utils.py                       # Utility functions
+│   ├── audio_preprocess.py            # audio conversion/preprocessing (ffmpeg wrapper)
+│   ├── asr_whisper.py                 # Whisper (large-v3) wrapper for initial transcription
+│   ├── align_mfa.py                   # prepare corpus and run Montreal Forced Aligner (MFA); parse TextGrid
+│   ├── segmenter.py                   # cut audio into clips per sentence and write .txt files
+│   └── generate_training_dataset.py   # generate TTS training dataset CSV
+├── assets/			                     # Project assets
+│   └── sample.mp3                     # Sample audio for testing
+├── tests/                             # Test suite
+│   ├── test_audio_preprocess.py       # Audio preprocessing test
+│   ├── test_asr.py                    # Automatic Speech Recognition (with Whisper) test
+│   ├── test_alignment.py              # MFA alignment test
+│   ├── test_segmenter.py              # Sentence-wise segmententation test
+│   └── test_all.py                    # All tests in sequence
+├── output/                            # Generated outputs
+├── main.py                            # CLI entrypoint that orchestrates the pipeline
+├── requirements.txt                   # Dependencies
+└── README.md                          # Documentation
 ```
 
 ## Installation and Usage (CLI)
@@ -136,6 +142,7 @@ python main.py --input /path/to/input.wav --outdir ./dataset_out --lang es --whi
 | `--whisper_model` | Whisper model to use (tiny/base/small/medium/large-v3) | `--whisper_model medium` |
 | `--mfa_lang` | Language model name for MFA alignment | `--mfa_lang spanish_mfa` |
 | `--outfreq` | Output sample rate in Hz for clips | `--outfreq 24000` |
+| `--generate-dataset` | Generate TTS training dataset CSV from clips | `--generate-dataset` |
 
 #### Notes and recommendations:
 - Transcription accuracy matters for alignment. If the Whisper transcript contains many errors, forced alignment will struggle. Inspect transcript.txt and manually correct obvious errors if you require perfect segmentation.
