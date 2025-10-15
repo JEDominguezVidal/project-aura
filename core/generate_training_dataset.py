@@ -37,6 +37,9 @@ def generate_tts_dataset(logger: logging.Logger, clips_dir: Path, output_csv: Pa
     logger.info("Generating TTS dataset CSV from %d clips...", len(wav_files))
 
     with open(output_csv, "w", newline="", encoding="utf-8") as csvfile:
+        # Write UTF-8 BOM to ensure proper encoding recognition
+        csvfile.write('\ufeff')
+
         writer = csv.writer(csvfile)
         writer.writerow(["filename", "text"])
 
