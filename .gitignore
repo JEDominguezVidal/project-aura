@@ -8,3 +8,6 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+
+# Output files
+output/
