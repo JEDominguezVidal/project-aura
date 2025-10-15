@@ -8,35 +8,55 @@ voice cloning systems that require filename,text format datasets.
 from pathlib import Path
 import csv
 import logging
+import shutil
 
 
-def generate_tts_dataset(logger: logging.Logger, clips_dir: Path, output_csv: Path, relative_paths=True):
+def generate_tts_dataset(logger: logging.Logger, clips_dir: Path, output_dir: Path):
     """
-    Generates a CSV file mapping .wav files to their corresponding text transcripts.
+    Creates a complete TTS training dataset with CSV metadata and audio files.
+
+    This function creates a self-contained dataset directory containing:
+    - dataset.csv: CSV file mapping audio filenames to text transcripts
+    - Audio files: All .wav clips copied from the clips directory
+
+    The resulting dataset/ directory can be easily exported to platforms like HuggingFace.
 
     Args:
         logger: Logger instance for logging messages
-        clips_dir (Path): Directory containing .wav and .txt files.
-        output_csv (Path): Output CSV file path (e.g. dataset.csv).
-        relative_paths (bool): If True, stores only the filename (e.g. '0001.wav'),
-                               otherwise stores absolute paths.
+        clips_dir (Path): Directory containing .wav and .txt files from segmentation
+        output_dir (Path): Base output directory where dataset/ folder will be created
 
-    Output CSV format:
-        filename,text
-        0001.wav,Hello there!
-        0002.wav,I am very tired.
+    Returns:
+        bool: True if dataset was created successfully, False otherwise
+
+    Dataset structure:
+        output_dir/
+        └── dataset/
+            ├── dataset.csv
+            ├── 01.wav
+            ├── 02.wav
+            └── ...
     """
     logger = logger
     clips_dir = Path(clips_dir)
+    output_dir = Path(output_dir)
+
+    # Create dataset directory
+    dataset_dir = output_dir / "dataset"
+    dataset_dir.mkdir(parents=True, exist_ok=True)
+
     wav_files = sorted(clips_dir.glob("*.wav"))
 
     if not wav_files:
         logger.warning("No .wav files found in %s", clips_dir)
-        return
+        return False
 
-    logger.info("Generating TTS dataset CSV from %d clips...", len(wav_files))
+    logger.info("Creating TTS dataset with %d clips in %s", len(wav_files), dataset_dir)
 
-    with open(output_csv, "w", newline="", encoding="utf-8") as csvfile:
+    # CSV file path inside dataset directory
+    csv_path = dataset_dir / "dataset.csv"
+
+    with open(csv_path, "w", newline="", encoding="utf-8") as csvfile:
         # Write UTF-8 BOM to ensure proper encoding recognition
         csvfile.write('\ufeff')
 
@@ -55,12 +75,24 @@ def generate_tts_dataset(logger: logging.Logger, clips_dir: Path, output_csv: Pa
                 logger.warning("Empty transcription in %s, skipping", txt_path)
                 continue
 
-            filename = wav_path.name if relative_paths else str(wav_path.resolve())
-            writer.writerow([filename, text])
+            # Copy audio file to dataset directory
+            dest_wav = dataset_dir / wav_path.name
+            try:
+                shutil.copy2(wav_path, dest_wav)
+                logger.debug("Copied audio file: %s -> %s", wav_path.name, dest_wav)
+            except Exception as e:
+                logger.error("Failed to copy %s: %s", wav_path.name, e)
+                continue
+
+            # Add entry to CSV
+            writer.writerow([wav_path.name, text])
             count += 1
 
-    logger.info("Dataset CSV written to %s with %d entries.", output_csv, count)
+    logger.info("Dataset created successfully: %d files in %s", count, dataset_dir)
+    logger.info("CSV metadata: %s", csv_path)
+
     if count == 0:
-        logger.warning("No valid pairs were found; CSV is empty.")
+        logger.warning("No valid pairs were found; dataset is empty.")
         return False
+
     return True

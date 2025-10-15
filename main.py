@@ -109,15 +109,15 @@ def main() -> None:
     clips_dir.mkdir(exist_ok=True)
     generated_clips = export_sentence_clips(logger, preproc_wav, sentences, clips_dir, outfreq=args.outfreq)
 
-    # Step 6: Generate TTS training dataset CSV (optional)
+    # Step 6: Generate TTS training dataset (optional)
     if args.generate_dataset:
-        logger.info("Generating TTS training dataset CSV...")
-        dataset_csv = outdir / "dataset.csv"
-        success = generate_tts_dataset(logger, clips_dir, dataset_csv)
+        logger.info("Generating TTS training dataset...")
+        success = generate_tts_dataset(logger, clips_dir, outdir)
         if success:
-            logger.info("TTS dataset CSV generated: %s", dataset_csv)
+            dataset_dir = outdir / "dataset"
+            logger.info("TTS dataset created successfully in: %s", dataset_dir)
         else:
-            logger.warning("Failed to generate TTS dataset CSV")
+            logger.warning("Failed to generate TTS dataset")
 
     logger.info("Process completed. Clips generated in: %s", clips_dir)
 
