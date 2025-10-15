@@ -26,7 +26,7 @@ from typing import List, Dict, Any
 from core.config import MFA_BEAM, MFA_RETRY_BEAM, MIN_WORD_ALIGNMENT_RATIO
 
 
-def run_mfa_alignment(logger: logging.Logger, wav_path: Path, transcript_path: Path, out_dir: Path, mfa_lang: str = "spanish_mfa") -> Path:
+def run_mfa_alignment(wav_path: Path, transcript_path: Path, out_dir: Path, mfa_lang: str = "spanish_mfa") -> Path:
     """
     Prepare a small corpus for MFA, copy WAV and transcript to matching basename, and execute MFA alignment.
 
@@ -40,7 +40,6 @@ def run_mfa_alignment(logger: logging.Logger, wav_path: Path, transcript_path: P
     - Acoustic model and pronunciation dictionary for the target language
 
     Args:
-        logger: Logger instance for logging messages
         wav_path: Path to preprocessed WAV file (16kHz, mono, 16-bit PCM)
         transcript_path: Path to text file containing orthographic transcription
         out_dir: Directory where MFA will deposit results
@@ -55,14 +54,13 @@ def run_mfa_alignment(logger: logging.Logger, wav_path: Path, transcript_path: P
 
     Example:
         >>> textgrid_path = run_mfa_alignment(
-        ...     logger,
         ...     Path('audio.wav'),
         ...     Path('transcript.txt'),
         ...     Path('output'),
         ...     'spanish_mfa'
         ... )
     """
-    logger = logger
+    logger = logging.getLogger(__name__)
     wav_path = Path(wav_path)
     transcript_path = Path(transcript_path)
     out_dir = Path(out_dir)
@@ -137,7 +135,7 @@ def run_mfa_alignment(logger: logging.Logger, wav_path: Path, transcript_path: P
     return tg
 
 
-def parse_textgrid_for_sentences(logger: logging.Logger, textgrid_path: Path, transcript_path: Path) -> List[Dict[str, Any]]:
+def parse_textgrid_for_sentences(textgrid_path: Path, transcript_path: Path) -> List[Dict[str, Any]]:
     """
     Parse TextGrid and original transcript to return list of sentences with start/end times in seconds.
 
@@ -150,7 +148,6 @@ def parse_textgrid_for_sentences(logger: logging.Logger, textgrid_path: Path, tr
     4. Attempt to map each sentence to contiguous subsequence of aligned words
 
     Args:
-        logger: Logger instance for logging messages
         textgrid_path: Path to MFA-generated TextGrid file
         transcript_path: Path to original transcript text file
 
@@ -165,11 +162,11 @@ def parse_textgrid_for_sentences(logger: logging.Logger, textgrid_path: Path, tr
         FileNotFoundError: If input files don't exist
 
     Example:
-        >>> sentences = parse_textgrid_for_sentences(logger, 'alignment.TextGrid', 'transcript.txt')
+        >>> sentences = parse_textgrid_for_sentences('alignment.TextGrid', 'transcript.txt')
         >>> for sent in sentences:
         ...     print(f"{sent['sentence']}: {sent['start']:.2f}s - {sent['end']:.2f}s")
     """
-    logger = logger
+    logger = logging.getLogger(__name__)
     textgrid_path = Path(textgrid_path)
     transcript_path = Path(transcript_path)
 

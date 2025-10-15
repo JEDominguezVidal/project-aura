@@ -12,7 +12,7 @@ import logging
 from typing import Dict, Any
 
 
-def transcribe_whisper(logger: logging.Logger, wav_path: str, out_txt: str, model_name: str = "medium", language: str = "es") -> Dict[str, Any]:
+def transcribe_whisper(wav_path: str, out_txt: str, model_name: str = "medium", language: str = "es") -> Dict[str, Any]:
     """
     Transcribe audio file using OpenAI Whisper and save result to text file.
 
@@ -21,7 +21,6 @@ def transcribe_whisper(logger: logging.Logger, wav_path: str, out_txt: str, mode
     The transcription includes automatic punctuation and formatting.
 
     Args:
-        logger: Logger instance for logging messages
         wav_path: Path to input WAV file (must be Whisper-compatible format)
         out_txt: Path where transcript text will be saved
         model_name: Whisper model to use (e.g. "tiny", "base", "small", "medium", "large-v3")
@@ -42,7 +41,7 @@ def transcribe_whisper(logger: logging.Logger, wav_path: str, out_txt: str, mode
         >>> print(result['text'])
         'Hi, this is just a test.'
     """
-    logger = logger
+    logger = logging.getLogger(__name__)
 
     # Verify input file exists
     if not Path(wav_path).exists():

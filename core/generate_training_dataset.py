@@ -11,7 +11,7 @@ import logging
 import shutil
 
 
-def generate_tts_dataset(logger: logging.Logger, clips_dir: Path, output_dir: Path):
+def generate_tts_dataset(clips_dir: Path, output_dir: Path):
     """
     Creates a complete TTS training dataset with CSV metadata and audio files.
 
@@ -22,7 +22,6 @@ def generate_tts_dataset(logger: logging.Logger, clips_dir: Path, output_dir: Pa
     The resulting dataset/ directory can be easily exported to platforms like HuggingFace.
 
     Args:
-        logger: Logger instance for logging messages
         clips_dir (Path): Directory containing .wav and .txt files from segmentation
         output_dir (Path): Base output directory where dataset/ folder will be created
 
@@ -37,7 +36,7 @@ def generate_tts_dataset(logger: logging.Logger, clips_dir: Path, output_dir: Pa
             ├── 02.wav
             └── ...
     """
-    logger = logger
+    logger = logging.getLogger(__name__)
     clips_dir = Path(clips_dir)
     output_dir = Path(output_dir)
 

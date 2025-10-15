@@ -83,18 +83,18 @@ def main() -> None:
     # Step 1: Preprocess audio for Whisper compatibility
     logger.info("Preprocessing audio for Whisper...")
     preproc_wav = outdir / "input_16k_mono.wav"
-    ensure_wav_for_whisper(logger, Path(args.input), preproc_wav)
+    ensure_wav_for_whisper(Path(args.input), preproc_wav)
 
     # Step 2: Perform ASR with Whisper
     logger.info("Transcribing with Whisper (%s)...", args.whisper_model)
     transcript_txt = outdir / "transcript.txt"
-    transcribe_whisper(logger, str(preproc_wav), str(transcript_txt), model_name=args.whisper_model, language=args.lang)
+    transcribe_whisper(str(preproc_wav), str(transcript_txt), model_name=args.whisper_model, language=args.lang)
 
     # Step 3: Run MFA alignment
     logger.info("Running MFA for alignment...")
     mfa_output_dir = outdir / "mfa_output"
     mfa_output_dir.mkdir(exist_ok=True)
-    textgrid_path = run_mfa_alignment(logger=logger, wav_path=preproc_wav, transcript_path=transcript_txt, out_dir=mfa_output_dir, mfa_lang=args.mfa_lang)
+    textgrid_path = run_mfa_alignment(wav_path=preproc_wav, transcript_path=transcript_txt, out_dir=mfa_output_dir, mfa_lang=args.mfa_lang)
 
     # Step 4: Parse TextGrid and generate sentence timestamps
     logger.info("Parsing TextGrid to extract sentences with timestamps...")
@@ -102,17 +102,17 @@ def main() -> None:
         logger.error("No TextGrid found in %s", mfa_output_dir)
         raise SystemExit(1)
 
-    sentences = parse_textgrid_for_sentences(logger, textgrid_path, transcript_txt)
+    sentences = parse_textgrid_for_sentences(textgrid_path, transcript_txt)
 
     # Step 5: Export clips per sentence
     clips_dir = outdir / "clips"
     clips_dir.mkdir(exist_ok=True)
-    generated_clips = export_sentence_clips(logger, preproc_wav, sentences, clips_dir, outfreq=args.outfreq)
+    generated_clips = export_sentence_clips(preproc_wav, sentences, clips_dir, outfreq=args.outfreq)
 
     # Step 6: Generate TTS training dataset (optional)
     if args.generate_dataset:
         logger.info("Generating TTS training dataset...")
-        success = generate_tts_dataset(logger, clips_dir, outdir)
+        success = generate_tts_dataset(clips_dir, outdir)
         if success:
             dataset_dir = outdir / "dataset"
             logger.info("TTS dataset created successfully in: %s", dataset_dir)

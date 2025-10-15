@@ -23,7 +23,7 @@ import logging
 from core.config import MIN_SENTENCE_DURATION, PRE_ROLL_SECONDS, POST_ROLL_SECONDS
 
 
-def export_sentence_clips(logger: logging.Logger, source_wav: Path, sentences: list, out_dir: Path, min_dur: float = MIN_SENTENCE_DURATION, pre_roll: float = PRE_ROLL_SECONDS, post_roll: float = POST_ROLL_SECONDS, outfreq: int = 16000) -> list:
+def export_sentence_clips(source_wav: Path, sentences: list, out_dir: Path, min_dur: float = MIN_SENTENCE_DURATION, pre_roll: float = PRE_ROLL_SECONDS, post_roll: float = POST_ROLL_SECONDS, outfreq: int = 16000) -> list:
     """
     Export audio clips for each sentence using ffmpeg.
 
@@ -32,7 +32,6 @@ def export_sentence_clips(logger: logging.Logger, source_wav: Path, sentences: l
     Audio is resampled to the specified output frequency if different from input.
 
     Args:
-        logger: Logger instance for logging messages
         source_wav: Path to the source WAV file
         sentences: List of sentence dictionaries with 'sentence', 'start', 'end' keys
         out_dir: Directory to save clips and transcriptions
@@ -44,7 +43,7 @@ def export_sentence_clips(logger: logging.Logger, source_wav: Path, sentences: l
     Returns:
         List of paths to generated clip files
     """
-    logger = logger
+    logger = logging.getLogger(__name__)
     generated_clips = []
 
     for i, sentence_data in enumerate(sentences):
