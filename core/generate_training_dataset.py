@@ -40,8 +40,10 @@ def generate_tts_dataset(clips_dir: Path, output_dir: Path):
     clips_dir = Path(clips_dir)
     output_dir = Path(output_dir)
 
-    # Create dataset directory
+    # Create dataset directory (clear any existing one first)
     dataset_dir = output_dir / "dataset"
+    if dataset_dir.exists():
+        shutil.rmtree(dataset_dir)
     dataset_dir.mkdir(parents=True, exist_ok=True)
 
     wav_files = sorted(clips_dir.glob("*.wav"))

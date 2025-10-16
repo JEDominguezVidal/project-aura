@@ -15,6 +15,7 @@ by breaking them into sentence-level segments with precise timing information.
 """
 import argparse
 import logging
+import shutil
 from pathlib import Path
 
 from core.utils import setup_logger
@@ -106,7 +107,9 @@ def main() -> None:
 
     # Step 5: Export clips per sentence
     clips_dir = outdir / "clips"
-    clips_dir.mkdir(exist_ok=True)
+    if clips_dir.exists():
+        shutil.rmtree(clips_dir)
+    clips_dir.mkdir(parents=True, exist_ok=True)
     generated_clips = export_sentence_clips(preproc_wav, sentences, clips_dir, outfreq=args.outfreq)
 
     # Step 6: Generate TTS training dataset (optional)
