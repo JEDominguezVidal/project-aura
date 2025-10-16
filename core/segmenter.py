@@ -63,7 +63,7 @@ def export_sentence_clips(source_wav: Path, sentences: list, out_dir: Path, min_
 
         # Generate filename
         clip_number = i + starting_number
-        clip_name = f"{clip_number:02d}"
+        clip_name = f"{clip_number:04d}"
         wav_path = out_dir / f"{clip_name}.wav"
         txt_path = out_dir / f"{clip_name}.txt"
 
