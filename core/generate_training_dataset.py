@@ -11,7 +11,7 @@ import logging
 import shutil
 
 
-def generate_tts_dataset(clips_dir: Path, output_dir: Path):
+def generate_tts_dataset(clips_dir: Path, output_dir: Path, resume: bool = False):
     """
     Creates a complete TTS training dataset with CSV metadata and audio files.
 
@@ -40,11 +40,25 @@ def generate_tts_dataset(clips_dir: Path, output_dir: Path):
     clips_dir = Path(clips_dir)
     output_dir = Path(output_dir)
 
-    # Create dataset directory (clear any existing one first)
+    # Create dataset directory
     dataset_dir = output_dir / "dataset"
-    if dataset_dir.exists():
+    if not resume and dataset_dir.exists():
         shutil.rmtree(dataset_dir)
     dataset_dir.mkdir(parents=True, exist_ok=True)
+
+    # Find max existing clip number if resuming
+    max_existing = 0
+    if resume:
+        existing_wavs = list(dataset_dir.glob("*.wav"))
+        clip_nums = []
+        for wav in existing_wavs:
+            try:
+                num = int(wav.stem)
+                clip_nums.append(num)
+            except ValueError:
+                pass
+        if clip_nums:
+            max_existing = max(clip_nums)
 
     wav_files = sorted(clips_dir.glob("*.wav"))
 
@@ -53,19 +67,36 @@ def generate_tts_dataset(clips_dir: Path, output_dir: Path):
         return False
 
     logger.info("Creating TTS dataset with %d clips in %s", len(wav_files), dataset_dir)
+    if resume:
+        logger.info("Resume mode: skipping clips <= %d", max_existing)
 
     # CSV file path inside dataset directory
     csv_path = dataset_dir / "dataset.csv"
+    csv_mode = "a" if resume and csv_path.exists() else "w"
+    write_bom = not resume
 
-    with open(csv_path, "w", newline="", encoding="utf-8") as csvfile:
-        # Write UTF-8 BOM to ensure proper encoding recognition
-        csvfile.write('\ufeff')
-
+    with open(csv_path, csv_mode, newline="", encoding="utf-8") as csvfile:
+        if write_bom:
+            # Write UTF-8 BOM to ensure proper encoding recognition
+            csvfile.write('\ufeff')
         writer = csv.writer(csvfile)
-        writer.writerow(["filename", "text"])
+        if not resume or not csv_path.exists():
+            # Write header only if new file or not resuming
+            writer.writerow(["filename", "text"])
 
         count = 0
         for wav_path in wav_files:
+            # Extract clip number from filename
+            try:
+                clip_num = int(wav_path.stem)
+            except ValueError:
+                logger.warning("Invalid clip filename %s, skipping", wav_path.name)
+                continue
+
+            if resume and clip_num <= max_existing:
+                logger.debug("Skipping existing clip %s", wav_path.name)
+                continue
+
             txt_path = wav_path.with_suffix(".txt")
             if not txt_path.exists():
                 logger.warning("No transcription found for %s, skipping", wav_path.name)

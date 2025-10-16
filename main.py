@@ -54,6 +54,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mfa_lang", default=DEFAULT_MFA_LANG, help=f"MFA language model (default: {DEFAULT_MFA_LANG})")
     parser.add_argument("--outfreq", type=int, default=DEFAULT_OUTPUT_FREQ, help=f"Output sample rate in Hz (default: {DEFAULT_OUTPUT_FREQ})")
     parser.add_argument("--generate-dataset", action="store_true", help="Generate TTS training dataset CSV from clips")
+    parser.add_argument("--resume", action="store_true", help="Resume from existing clips/dataset, continue numbering incrementally")
     return parser.parse_args()
 
 
@@ -107,15 +108,34 @@ def main() -> None:
 
     # Step 5: Export clips per sentence
     clips_dir = outdir / "clips"
-    if clips_dir.exists():
-        shutil.rmtree(clips_dir)
-    clips_dir.mkdir(parents=True, exist_ok=True)
-    generated_clips = export_sentence_clips(preproc_wav, sentences, clips_dir, outfreq=args.outfreq)
+    if args.resume:
+        # Resume mode: calculate starting number from existing clips
+        if clips_dir.exists():
+            existing_clips = list(clips_dir.glob("*.wav"))
+            clip_nums = []
+            for wav in existing_clips:
+                try:
+                    num = int(wav.stem)
+                    clip_nums.append(num)
+                except ValueError:
+                    pass
+            starting_number = max(clip_nums) + 1 if clip_nums else 1
+        else:
+            starting_number = 1
+        clips_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        # Clean mode: clear existing clips
+        if clips_dir.exists():
+            shutil.rmtree(clips_dir)
+        clips_dir.mkdir(parents=True, exist_ok=True)
+        starting_number = 1
+
+    generated_clips = export_sentence_clips(preproc_wav, sentences, clips_dir, outfreq=args.outfreq, starting_number=starting_number)
 
     # Step 6: Generate TTS training dataset (optional)
     if args.generate_dataset:
         logger.info("Generating TTS training dataset...")
-        success = generate_tts_dataset(clips_dir, outdir)
+        success = generate_tts_dataset(clips_dir, outdir, resume=args.resume)
         if success:
             dataset_dir = outdir / "dataset"
             logger.info("TTS dataset created successfully in: %s", dataset_dir)

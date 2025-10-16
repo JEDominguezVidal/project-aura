@@ -23,7 +23,7 @@ import logging
 from core.config import MIN_SENTENCE_DURATION, PRE_ROLL_SECONDS, POST_ROLL_SECONDS
 
 
-def export_sentence_clips(source_wav: Path, sentences: list, out_dir: Path, min_dur: float = MIN_SENTENCE_DURATION, pre_roll: float = PRE_ROLL_SECONDS, post_roll: float = POST_ROLL_SECONDS, outfreq: int = 16000) -> list:
+def export_sentence_clips(source_wav: Path, sentences: list, out_dir: Path, min_dur: float = MIN_SENTENCE_DURATION, pre_roll: float = PRE_ROLL_SECONDS, post_roll: float = POST_ROLL_SECONDS, outfreq: int = 16000, starting_number: int = 1) -> list:
     """
     Export audio clips for each sentence using ffmpeg.
 
@@ -62,7 +62,8 @@ def export_sentence_clips(source_wav: Path, sentences: list, out_dir: Path, min_
         duration = end_cut - start_cut
 
         # Generate filename
-        clip_name = f"{i+1:02d}"
+        clip_number = i + starting_number
+        clip_name = f"{clip_number:02d}"
         wav_path = out_dir / f"{clip_name}.wav"
         txt_path = out_dir / f"{clip_name}.txt"
 
