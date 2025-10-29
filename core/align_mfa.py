@@ -3,18 +3,20 @@ Prepare files for MFA, execute MFA, and parse resulting TextGrid.
 
 This module handles the integration with Montreal Forced Aligner (MFA) for
 forced alignment of audio with transcript text. It prepares the required
-corpus structure, executes MFA alignment, and parses the resulting TextGrid
-to extract precise word and sentence timing information.
+corpus structure, executes MFA alignment, corrects any "<unk>" tags in TextGrids,
+and parses the resulting TextGrid to extract precise word and sentence timing information.
 
 The module assumes that MFA is installed and available in the system PATH.
 
 Main functions:
 - run_mfa_alignment: Prepare corpus, execute MFA alignment, return TextGrid path
+- correct_textgrid_unks: Replace "<unk>" entries with words from transcript
 - parse_textgrid_for_sentences: Parse TextGrid + transcript to produce sentence list with timestamps
 
 Notes:
 - MFA expects WAV+lab/txt pairs with matching basenames
-- This implementation uses heuristics to map sentences to aligned word sequences
+- This implementation includes automatic correction of MFA alignment failures
+- Uses heuristics to map sentences to aligned word sequences
 """
 from pathlib import Path
 import subprocess
@@ -133,6 +135,119 @@ def run_mfa_alignment(wav_path: Path, transcript_path: Path, out_dir: Path, mfa_
 
     logger.info("TextGrid generated at: %s", tg)
     return tg
+
+
+def correct_textgrid_unks(textgrid_path: Path, transcript_path: Path) -> Path:
+    """
+    Correct "<unk>" tags in TextGrid by replacing with words from original transcript.
+
+    This function identifies "<unk>" entries in the word tier of a TextGrid file
+    and replaces them with the corresponding words from the Whisper transcript.
+    This ensures proper alignment by preserving word continuity, preventing premature
+    clip segmentation due to unrecognized words.
+
+    Args:
+        textgrid_path: Path to the MFA-generated TextGrid file with potential "<unk>" entries
+        transcript_path: Path to the original Whisper transcript text file
+
+    Returns:
+        Path: Path to the corrected TextGrid file (appends "_corrected" to filename)
+
+    Raises:
+        ValueError: If no word tier found or transcript parsing fails
+        FileNotFoundError: If input files don't exist
+
+    Example:
+        >>> corrected_path = correct_textgrid_unks('alignment.TextGrid', 'transcript.txt')
+        >>> # alignment_corrected.TextGrid created with "<unk>" replaced by transcript words
+    """
+    logger = logging.getLogger(__name__)
+    textgrid_path = Path(textgrid_path)
+    transcript_path = Path(transcript_path)
+
+    # Load TextGrid file
+    try:
+        tg = TextGrid.fromFile(str(textgrid_path))
+    except Exception as e:
+        logger.error("Error loading TextGrid for correction: %s", e)
+        raise
+
+    # Read original transcript and split into words
+    with open(transcript_path, 'r', encoding='utf-8') as f:
+        full_transcript = f.read().strip()
+
+    # Split transcript into words (similar to sentence cleaning but for all words)
+    # Handle punctuation and case
+    transcript_words = re.findall(r'\b\w+\b', full_transcript.lower())
+    transcript_words = [w.strip() for w in transcript_words if w.strip()]
+
+    if not transcript_words:
+        logger.error("No words found in transcript for TextGrid correction")
+        raise ValueError("Empty transcript for TextGrid correction")
+
+    logger.info("Transcript contains %d words for potential <unk> replacement", len(transcript_words))
+
+    # Find word tier in TextGrid (same logic as parse_textgrid_for_sentences)
+    word_tier = None
+    for tier in tg.tiers:
+        if hasattr(tier, 'intervals') and len(tier.intervals) > 0:
+            word_tier = tier
+            break
+
+    if word_tier is None:
+        logger.error("No word tier found in TextGrid for correction")
+        raise ValueError("No word tier found in TextGrid for correction")
+
+    # Track replacements
+    unk_count = 0
+    transcript_idx = 0  # Index in transcript words
+
+    # Iterate through intervals in word tier
+    for i, interval in enumerate(word_tier.intervals):
+        mark_text = interval.mark.strip()
+
+        if mark_text == '':
+            # Empty/silence interval - skip
+            continue
+
+        if mark_text == '<unk>':
+            # Found unk to replace
+            if transcript_idx < len(transcript_words):
+                # Replace with next word from transcript
+                original_word = transcript_words[transcript_idx]
+                interval.mark = original_word
+                logger.info("Replaced <unk> with '%s' at interval %d (%.3f-%.3f)",
+                          original_word, i, interval.minTime, interval.maxTime)
+                unk_count += 1
+                transcript_idx += 1
+            else:
+                logger.warning("No more words in transcript to replace <unk> at interval %d", i)
+                break
+        else:
+            # Normal word - advance transcript index if it matches
+            # Clean mark for comparison
+            clean_mark = re.sub(r'[^\wáéíóúñüÁÉÍÓÚÑÜ]', '', mark_text.lower())
+
+            # Try to sync with transcript
+            while (transcript_idx < len(transcript_words) and
+                   transcript_idx + unk_count < i + 1):  # Rough sync check
+                if clean_mark in transcript_words[transcript_idx]:
+                    transcript_idx += 1
+                    break
+                transcript_idx += 1
+
+    logger.info("TextGrid correction completed: %d '<unk>' entries replaced", unk_count)
+
+    # Save corrected TextGrid with new filename
+    corrected_path = textgrid_path.with_name(f"{textgrid_path.stem}_corrected{textgrid_path.suffix}")
+    try:
+        tg.write(str(corrected_path))
+        logger.info("Corrected TextGrid saved at: %s", corrected_path)
+    except Exception as e:
+        logger.error("Failed to save corrected TextGrid: %s", e)
+        raise
+
+    return corrected_path
 
 
 def parse_textgrid_for_sentences(textgrid_path: Path, transcript_path: Path) -> List[Dict[str, Any]]:
