@@ -21,7 +21,7 @@ from pathlib import Path
 from core.utils import setup_logger
 from core.audio_preprocess import ensure_wav_for_whisper
 from core.asr_whisper import transcribe_whisper
-from core.align_mfa import run_mfa_alignment, parse_textgrid_for_sentences
+from core.align_mfa import run_mfa_alignment, correct_textgrid_unks, parse_textgrid_for_sentences
 from core.segmenter import export_sentence_clips
 from core.generate_training_dataset import generate_tts_dataset
 from core.config import (
@@ -97,6 +97,11 @@ def main() -> None:
     mfa_output_dir = outdir / "mfa_output"
     mfa_output_dir.mkdir(exist_ok=True)
     textgrid_path = run_mfa_alignment(wav_path=preproc_wav, transcript_path=transcript_txt, out_dir=mfa_output_dir, mfa_lang=args.mfa_lang)
+
+    # Step 3.5: Correct any <unk> tags in TextGrid
+    logger.info("Correcting TextGrid <unk> entries...")
+    corrected_textgrid_path = correct_textgrid_unks(textgrid_path, transcript_txt)
+    textgrid_path = corrected_textgrid_path  # Use corrected version
 
     # Step 4: Parse TextGrid and generate sentence timestamps
     logger.info("Parsing TextGrid to extract sentences with timestamps...")
