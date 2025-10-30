@@ -143,6 +143,7 @@ python main.py --input /path/to/input.wav --outdir ./dataset_out --lang es --whi
 | `--mfa_lang` | Language model name for MFA alignment | `--mfa_lang spanish_mfa` |
 | `--outfreq` | Output sample rate in Hz for clips | `--outfreq 24000` |
 | `--generate-dataset` | Generate TTS training dataset CSV from clips | `--generate-dataset` |
+| `--resume` | Resume from existing clips/dataset, continue numbering incrementally | `--resume` |
 
 #### Notes and recommendations:
 - Transcription accuracy matters for alignment. If the Whisper transcript contains many errors, forced alignment will struggle. Inspect transcript.txt and manually correct obvious errors if you require perfect segmentation.
