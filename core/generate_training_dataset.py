@@ -11,7 +11,7 @@ import logging
 import shutil
 
 
-def generate_tts_dataset(clips_dir: Path, output_dir: Path, resume: bool = False):
+def generate_tts_dataset(clips_dir: Path, output_dir: Path, resume: bool = False) -> bool:
     """
     Creates a complete TTS training dataset with CSV metadata and audio files.
 
@@ -116,8 +116,8 @@ def generate_tts_dataset(clips_dir: Path, output_dir: Path, resume: bool = False
                 logger.error("Failed to copy %s: %s", wav_path.name, e)
                 continue
 
-            # Add entry to CSV
-            writer.writerow([wav_path.name, text])
+            # Add entry to CSV (quote text to handle commas safely)
+            writer.writerow([wav_path.name, f'"{text}"'])
             count += 1
 
     logger.info("Dataset created successfully: %d files in %s", count, dataset_dir)
@@ -128,3 +128,4 @@ def generate_tts_dataset(clips_dir: Path, output_dir: Path, resume: bool = False
         return False
 
     return True
+
