@@ -133,6 +133,11 @@ Run the pipeline with the main script:
 python main.py --input /path/to/input.wav --outdir ./dataset_out --lang es --whisper_model large-v3 --mfa_lang spanish_mfa --outfreq 24000
 ```
 
+Generate a dataset ready for TTS training and upload it to HuggingFace:
+```bash
+python main.py --input /path/to/input.wav --outfreq 24000 --generate-dataset --resume --upload-dataset --repository-name myuser/my-repo --token hf_...
+```
+
 ### CLI Arguments:
 | Argument | Description | Example |
 |----------|-------------|---------|
@@ -144,6 +149,9 @@ python main.py --input /path/to/input.wav --outdir ./dataset_out --lang es --whi
 | `--outfreq` | Output sample rate in Hz for clips | `--outfreq 24000` |
 | `--generate-dataset` | Generate TTS training dataset CSV from clips | `--generate-dataset` |
 | `--resume` | Resume from existing clips/dataset, continue numbering incrementally | `--resume` |
+| `--upload-dataset` | Upload generated dataset to HuggingFace Hub (requires --generate-dataset) | `--upload-dataset` |
+| `--repository-name` | HuggingFace repository name (e.g., 'username/repo-name') | `--repository-name myuser/my-repo` |
+| `--token` | HuggingFace authentication token | `--token hf_xxxxxxxxxxxxxxxxx` |
 
 #### Notes and recommendations:
 - Transcription accuracy matters for alignment. If the Whisper transcript contains many errors, forced alignment will struggle. Inspect transcript.txt and manually correct obvious errors if you require perfect segmentation.

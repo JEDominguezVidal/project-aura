@@ -1,3 +1,6 @@
 openai-whisper
 montreal-forced-aligner
 textgrid
+datasets
+huggingface_hub
+pandas
