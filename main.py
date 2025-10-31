@@ -9,6 +9,7 @@ This module serves as the primary interface for the audio processing pipeline th
 4. Parses alignment results to extract sentence-level timestamps
 5. Generates segmented audio clips with corresponding transcriptions
 6. (Optional) Generates TTS training dataset CSV, when --generate-dataset is used
+7. (Optional) Uploads dataset to HuggingFace Hub, when --upload-dataset is used
 
 The pipeline is designed to create training datasets from long-form audio recordings
 by breaking them into sentence-level segments with precise timing information.
@@ -23,7 +24,7 @@ from core.audio_preprocess import ensure_wav_for_whisper
 from core.asr_whisper import transcribe_whisper
 from core.align_mfa import run_mfa_alignment, correct_textgrid_unks, parse_textgrid_for_sentences
 from core.segmenter import export_sentence_clips
-from core.generate_training_dataset import generate_tts_dataset
+from core.generate_training_dataset import generate_tts_dataset, upload_to_hf
 from core.config import (
     DEFAULT_LANGUAGE,
     DEFAULT_WHISPER_MODEL,
@@ -55,6 +56,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--outfreq", type=int, default=DEFAULT_OUTPUT_FREQ, help=f"Output sample rate in Hz (default: {DEFAULT_OUTPUT_FREQ})")
     parser.add_argument("--generate-dataset", action="store_true", help="Generate TTS training dataset CSV from clips")
     parser.add_argument("--resume", action="store_true", help="Resume from existing clips/dataset, continue numbering incrementally")
+    parser.add_argument("--upload-dataset", action="store_true", help="Upload generated dataset to HuggingFace Hub (requires --generate-dataset)")
+    parser.add_argument("--repository-name", help="HuggingFace repository name (e.g., 'username/repo-name') - required if --upload-dataset")
+    parser.add_argument("--token", help="HuggingFace authentication token - required if --upload-dataset")
     return parser.parse_args()
 
 
@@ -74,6 +78,20 @@ def main() -> None:
     """
     # Parse command line arguments
     args = parse_args()
+
+    # Validate argument combinations
+    if args.upload_dataset and not args.generate_dataset:
+        print("Error: --upload-dataset requires --generate-dataset")
+        print("Use --generate-dataset --upload-dataset together")
+        exit(1)
+
+    if args.upload_dataset:
+        if not args.repository_name:
+            print("Error: --upload-dataset requires --repository-name")
+            exit(1)
+        if not args.token:
+            print("Error: --upload-dataset requires --token")
+            exit(1)
 
     # Initialise logging system
     logger = setup_logger()
@@ -144,6 +162,15 @@ def main() -> None:
         if success:
             dataset_dir = outdir / "dataset"
             logger.info("TTS dataset created successfully in: %s", dataset_dir)
+
+            # Step 7: Upload to HuggingFace Hub (optional)
+            if args.upload_dataset:
+                logger.info("Uploading dataset to HuggingFace Hub...")
+                upload_success = upload_to_hf(args.repository_name, args.token, dataset_dir)
+                if upload_success:
+                    logger.info("Dataset uploaded successfully")
+                else:
+                    logger.warning("Failed to upload dataset to HuggingFace Hub")
         else:
             logger.warning("Failed to generate TTS dataset")
 

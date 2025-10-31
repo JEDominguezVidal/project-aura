@@ -9,6 +9,9 @@ from pathlib import Path
 import csv
 import logging
 import shutil
+import pandas as pd
+from datasets import Dataset, Features, Audio, Value, DatasetDict
+from huggingface_hub import login
 
 
 def generate_tts_dataset(clips_dir: Path, output_dir: Path, resume: bool = False) -> bool:
@@ -129,3 +132,150 @@ def generate_tts_dataset(clips_dir: Path, output_dir: Path, resume: bool = False
 
     return True
 
+
+def upload_to_hf(repo_name: str, token: str, dataset_dir: Path) -> bool:
+    """
+    Upload the generated TTS dataset to HuggingFace Hub.
+
+    This function converts the local CSV-based dataset into a HuggingFace Dataset format
+    and uploads it to the specified repository. The dataset is split into train/validation
+    sets if it contains more than 1000 samples. Audio files are automatically handled
+    with proper sampling rate detection.
+
+    Args:
+        repo_name (str): HuggingFace repository name in format 'username/repo-name'.
+                        Repository will be created if it doesn't exist (requires proper permissions).
+        token (str): HuggingFace authentication token with write permissions.
+                    Can be obtained from https://huggingface.co/settings/tokens
+        dataset_dir (Path): Local directory containing the dataset (must contain dataset.csv and .wav files).
+                           This is the path returned by generate_tts_dataset().
+
+    Returns:
+        bool: True if upload was successful, False otherwise.
+
+    Raises:
+        SystemExit: Called internally on critical errors with appropriate error codes.
+
+    Example:
+        >>> success = upload_to_hf(
+        ...     repo_name="myusername/spanish-tts-dataset",
+        ...     token="hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        ...     dataset_dir=Path("./output/dataset")
+        ... )
+        >>> if success:
+        ...     print("Dataset uploaded successfully")
+    """
+    logger = logging.getLogger(__name__)
+
+    # Validate inputs
+    if not repo_name or not isinstance(repo_name, str):
+        logger.error("Invalid repository name: %s", repo_name)
+        return False
+
+    if not token or not isinstance(token, str):
+        logger.error("Invalid HuggingFace token provided")
+        return False
+
+    dataset_dir = Path(dataset_dir)
+    if not dataset_dir.exists() or not dataset_dir.is_dir():
+        logger.error("Dataset directory %s does not exist or is not a directory", dataset_dir)
+        return False
+
+    logger.info("Preparing dataset upload from: %s", dataset_dir)
+
+    # Find CSV file
+    csv_files = list(dataset_dir.glob("*.csv"))
+    if not csv_files:
+        logger.error("No CSV metadata file found in dataset directory %s", dataset_dir)
+        logger.error("Please run generate_tts_dataset() first to create the metadata")
+        return False
+
+    if len(csv_files) > 1:
+        logger.warning("Multiple CSV files found, using: %s", csv_files[0])
+        logger.warning("Using first CSV file found: %s", csv_files[0])
+
+    csv_path = csv_files[0]
+    logger.info("Loading metadata from: %s", csv_path)
+
+    try:
+        # Read CSV with error handling
+        df = pd.read_csv(csv_path)
+        logger.info("Loaded %d entries from CSV", len(df))
+    except Exception as e:
+        logger.error("Failed to read CSV file %s: %s", csv_path, e)
+        return False
+
+    # Validate required columns
+    required_cols = ['filename', 'text']
+    if not all(col in df.columns for col in required_cols):
+        logger.error("CSV missing required columns. Expected: %s, Found: %s",
+                    required_cols, list(df.columns))
+        return False
+
+    if len(df) == 0:
+        logger.error("CSV file is empty, no data to upload")
+        return False
+
+    # Convert filename column to absolute paths for HF Datasets
+    logger.info("Converting filenames to absolute paths...")
+    df['audio'] = df['filename'].apply(lambda x: str(dataset_dir / x))
+    df = df.drop('filename', axis=1)
+
+    logger.info("DataFrame prepared with %d entries", len(df))
+
+    try:
+        # Authenticate with HuggingFace
+        logger.info("Authenticating with HuggingFace Hub...")
+        login(token)
+        logger.info("Authentication successful")
+    except Exception as e:
+        logger.error("Failed to authenticate with HuggingFace: %s", e)
+        logger.error("Verify your token has write permissions")
+        return False
+
+    try:
+        # Define dataset features for proper type handling
+        features = Features({
+            "audio": Audio(sampling_rate=24000),  # Default 24kHz, can be overridden
+            "text": Value("string"),
+        })
+
+        # Convert pandas DataFrame to HuggingFace Dataset
+        logger.info("Converting to HuggingFace Dataset format...")
+        ds = Dataset.from_pandas(df, preserve_index=False)
+        ds = ds.cast(features)
+
+        # Determine train/validation split
+        min_split_size = 1000
+        if len(df) > min_split_size:
+            logger.info("Dataset large enough (%d > %d), splitting into train/validation sets",
+                       len(df), min_split_size)
+            ds_split = ds.train_test_split(test_size=0.05, seed=42)
+            dataset_dict = DatasetDict({
+                "train": ds_split['train'],
+                "validation": ds_split['test']
+            })
+            logger.info("Train set: %d samples, Validation set: %d samples",
+                       len(ds_split['train']), len(ds_split['test']))
+        else:
+            logger.info("Dataset small (%d <= %d), using entire dataset as training set",
+                       len(df), min_split_size)
+            dataset_dict = DatasetDict({"train": ds})
+
+    except Exception as e:
+        logger.error("Failed to create HuggingFace Dataset: %s", e)
+        return False
+
+    # Upload to Hub
+    logger.info("Starting upload to HuggingFace Hub repository: %s", repo_name)
+
+    try:
+        dataset_dict.push_to_hub(repo_name, token=token)
+        logger.info("Dataset uploaded successfully to: https://huggingface.co/%s", repo_name)
+    except Exception as e:
+        logger.error("Failed to upload dataset: %s", e)
+        logger.error("Check repository permissions and network connection")
+        return False
+
+    logger.info("Upload completed successfully")
+    return True
